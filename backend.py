@@ -181,7 +181,7 @@ def user_item_idx_id(data):
     course_idx2id_dict = {i: x for i, x in enumerate(course_list)}
     return user_id2idx_dict, user_idx2id_dict, course_id2idx_dict, course_idx2id_dict
 
-def train_nn_recom(epochs=2):
+def train_nn_recom(epochs=4):
     
     rating_df = load_ratings()
     num_users = len(rating_df['user'].unique())
@@ -207,7 +207,7 @@ def train_nn_recom(epochs=2):
     print('Model Training Done Successfuly!')
     return nn_model
 
-def clf_w_embeding(epochs=2):
+def clf_w_embeding(epochs=4):
     rating_df = load_ratings()
     user_id2idx_dict, user_idx2id_dict, course_id2idx_dict, course_idx2id_dict = user_item_idx_id(rating_df)
     nn_model = train_nn_recom(epochs=epochs)
