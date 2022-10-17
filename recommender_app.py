@@ -19,7 +19,7 @@ st.set_page_config(
 
 # ------- Functions ------
 # Load datasets
-@st.cache
+#@st.cache
 def load_ratings():
     return backend.load_ratings()
 
@@ -104,22 +104,33 @@ def train(model_name, params):
             time.sleep(0.5)
             backend.train(model_name, params)
         st.success('Done!')
-    
+
     elif model_name == backend.models[1]:
         pass
-    
-    # Start training KMeans model
+
     elif model_name == backend.models[2]:
         with st.spinner('Training...'):
             time.sleep(0.5)
             backend.train(model_selection, params)
             st.success('Done!')
-    # Start training KMeans with PCA model
+
     elif model_name == backend.models[3]:
         with st.spinner('Training...'):
             time.sleep(0.5)
             backend.train(model_selection, params)
-            st.success('Done!')        
+            st.success('Done!')
+
+    elif model_name == backend.models[4]:
+        with st.spinner('Training...'):
+            time.sleep(0.5)
+            backend.train(model_selection, params)
+            st.success('Model Training Done Successfuly!')     
+
+    elif model_name == backend.models[5]:
+        with st.spinner('Training...'):
+            time.sleep(0.5)
+            backend.train(model_selection, params)
+            st.success('Model Training Done Successfuly!')                        
             
     else:
         pass
@@ -160,7 +171,7 @@ if model_selection == backend.models[0]:
     # Add a slide bar for choosing similarity threshold
     course_sim_threshold = st.sidebar.slider('Course Similarity Threshold %',
                                              min_value=0, max_value=100,
-                                             value=60, step=10)
+                                             value=50, step=10)
     params['top_courses'] = top_courses
     params['sim_threshold'] = course_sim_threshold
 
@@ -170,25 +181,26 @@ elif model_selection == backend.models[1]:
     top_courses = st.sidebar.slider('Top courses',
                                     min_value=0, max_value=20,
                                     value=5, step=1)
+    """"                             
+    profile_sim_threshold = st.sidebar.slider('User Profile Similarity Threshold %',
+                                              min_value=0, max_value=100,
+                                              value=50, step=10)
 
+    """
     params['top_courses'] = top_courses
-
 # Clustering model
 elif model_selection == backend.models[2]:
-    top_courses = st.sidebar.slider('Top courses',
-                                    min_value=0, max_value=20,
-                                    value=5, step=1)
 
     cluster_no = st.sidebar.slider('Number_of_Clusters',
                                    min_value=0, max_value=20,
                                    value=18, step=1)
-    params['top_courses'] = top_courses
-    params['Number_of_Clusters'] = cluster_no
-
-elif model_selection == backend.models[3]:
     top_courses = st.sidebar.slider('Top courses',
                                     min_value=0, max_value=20,
-                                    value=5, step=1)
+                                    value=5, step=1)                                   
+    params['Number_of_Clusters'] = cluster_no
+    params['top_courses'] = top_courses
+
+elif model_selection == backend.models[3]:
 
     component_no = st.sidebar.slider('Number_of_Components',
                                    min_value=1, max_value=14,
@@ -197,14 +209,41 @@ elif model_selection == backend.models[3]:
     cluster_no = st.sidebar.slider('Number_of_Clusters',
                                    min_value=1, max_value=20,
                                    value=18, step=1)
-    params['top_courses'] = top_courses
+    top_courses = st.sidebar.slider('Top courses',
+                                    min_value=0, max_value=20,
+                                    value=5, step=1)
+
     params['Number_of_Components'] = component_no 
-    params['Number_of_Clusters'] = cluster_no    
+    params['Number_of_Clusters'] = cluster_no 
+    params['top_courses'] = top_courses   
+
+elif model_selection == backend.models[4]:
+    n_epochs = st.sidebar.slider('epochs',
+                                    min_value=0, max_value=5,
+                                    value=4, step=1)
+
+    top_courses = st.sidebar.slider('Top courses',
+                                    min_value=0, max_value=20,
+                                    value=5, step=1)                                
+    params['epochs'] = n_epochs
+    params['top_courses'] = top_courses
+
+
+elif model_selection == backend.models[5]:
+    n_epochs = st.sidebar.slider('epochs',
+                                    min_value=0, max_value=5,
+                                    value=4, step=1)
+
+    top_courses = st.sidebar.slider('Top courses',
+                                    min_value=0, max_value=20,
+                                    value=5, step=1)                                
+    params['epochs'] = n_epochs
+    params['top_courses'] = top_courses    
 
 else:
     pass
-
-
+   
+   
 # Training
 st.sidebar.subheader('3. Training: ')
 training_button = st.sidebar.button("Train Model")
@@ -212,9 +251,14 @@ training_text = st.sidebar.text('')
 
 # Start training process
 if training_button:
-    # if model_selection==backend.models[2]:
+    if (model_selection==backend.models[4]) or (model_selection==backend.models[5]):
+       # train model with new user  
+       new_id = backend.add_new_ratings(selected_courses_df['COURSE_ID'].values)
+       user_ids = [new_id] 
        train(model_selection, params)
-   
+
+    else :
+       train(model_selection, params)    
        
   
 # Prediction
@@ -222,11 +266,23 @@ st.sidebar.subheader('4. Prediction')
 # Start prediction process
 pred_button = st.sidebar.button("Recommend New Courses")
 if pred_button and selected_courses_df.shape[0] > 0:
-    # Create a new id for current user session
-    new_id = backend.add_new_ratings(selected_courses_df['COURSE_ID'].values)
-    user_ids = [new_id]
-    res_df = predict(model_selection, user_ids, params)
-    res_df = res_df[['COURSE_ID', 'SCORE']]
-    course_df = load_courses()
-    res_df = pd.merge(res_df, course_df, on=["COURSE_ID"]).drop('COURSE_ID', axis=1)
-    st.table(res_df)
+
+    if (model_selection==backend.models[4]) or (model_selection==backend.models[5]) :
+        new_id = (load_ratings())['user'].max()
+        user_ids = [new_id] 
+        res_df = predict(model_selection, user_ids, params)
+        res_df = res_df[['COURSE_ID', 'SCORE']]
+        course_df = load_courses()
+        res_df = pd.merge(res_df, course_df, on=["COURSE_ID"], how='inner').drop('COURSE_ID', axis=1)
+        st.table(res_df) 
+
+    else :
+
+        # Create a new id for current user session
+        new_id = backend.add_new_ratings(selected_courses_df['COURSE_ID'].values)
+        user_ids = [new_id]
+        res_df = predict(model_selection, user_ids, params)
+        res_df = res_df[['COURSE_ID', 'SCORE']]
+        course_df = load_courses()
+        res_df = pd.merge(res_df, course_df, on=["COURSE_ID"]).drop('COURSE_ID', axis=1)
+        st.table(res_df)
